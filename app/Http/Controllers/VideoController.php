@@ -83,7 +83,7 @@ class VideoController extends Controller
     {
         // $request->validated();
 
-        $video = Video::findOrFail($request["id"]);
+        $video = Video::findOrFail($request["video_id"]);
 
         $thumb_path = Storage::disk("s3")->put(
             "thumbs/$video->id",

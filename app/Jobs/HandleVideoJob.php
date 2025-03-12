@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Clip;
 use App\Models\Video;
 use App\Services\ProcessingLogsService;
+use Exception;
 use FFMpeg\FFProbe\DataMapping\Format;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -36,40 +37,54 @@ class HandleVideoJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $ffmpeg = FFMpeg::create();
-        $local_video_path = $this->copy_to_local($this->video->video_path);
-        $video_ffmeg = $ffmpeg->open($local_video_path);
 
-        $intervals = $this->video->clip_intervals;
+        try{
+            ProcessingLogsService::log("video", $this->video->id, "Video cutting started");
 
-        for ($i = 0; $i < count($intervals); $i++) {
-            $clipLocalPath = storage_path("app/temp/clip_{$i}.mp4");
-            $video_ffmeg->filters()->clip(
-                \FFMpeg\Coordinate\TimeCode::fromSeconds($intervals[$i][0]),
-                \FFMpeg\Coordinate\TimeCode::fromSeconds($intervals[$i][1] - $intervals[$i][0])
-            );
+            $ffmpeg = FFMpeg::create();
+            $local_video_path = $this->copy_to_local($this->video->video_path);
+            $video_ffmeg = $ffmpeg->open($local_video_path);
 
-            $video_ffmeg->save(new X264(), $clipLocalPath);
+            $intervals = $this->video->clip_intervals;
 
-            $clip = Clip::where("title", "clip_{$this->video->id}_{$i}")->first();
+            ProcessingLogsService::log(
+                "video",
+                $this->video->id,
+                "Intervals created (" . count($intervals) . " intervals)");
 
-            $s3_clip_path = "clips/{$this->video->id}/clip_{$i}.mp4";
-            $this->copy_to_s3($s3_clip_path, $clipLocalPath);
+            for ($i = 0; $i < count($intervals); $i++) {
+                $clipLocalPath = storage_path("app/temp/clip_{$i}.mp4");
+                $video_ffmeg->filters()->clip(
+                    \FFMpeg\Coordinate\TimeCode::fromSeconds($intervals[$i][0]),
+                    \FFMpeg\Coordinate\TimeCode::fromSeconds($intervals[$i][1] - $intervals[$i][0])
+                );
 
-            $clip->video_path = $s3_clip_path;
-            $clip->save();
+                $video_ffmeg->save(new X264(), $clipLocalPath);
+
+                $clip = Clip::where("title", "clip_{$this->video->id}_{$i}")->first();
+
+                $s3_clip_path = "clips/{$this->video->id}/clip_{$i}.mp4";
+                $this->copy_to_s3($s3_clip_path, $clipLocalPath);
+
+                $clip->video_path = $s3_clip_path;
+                $clip->save();
 
 
-            unlink($clipLocalPath);
+                unlink($clipLocalPath);
 
-            ProcessingLogsService::log("clip", $clip->id, "video processed");
-            ProcessingLogsService::log("video", $this->video->id, "clip {$i} processed");
-            Log::channel("custom_log")->info("Clip {$i} for video {$this->video->id} processed");
+                ProcessingLogsService::log("clip", $clip->id, "video processed");
+                ProcessingLogsService::log("video", $this->video->id, "clip {$i} processed");
+                Log::channel("custom_log")->info("Clip {$i} for video {$this->video->id} processed");
+            }
+
+            ProcessingLogsService::log("video", $this->video->id, "all clips processed");
+
+            unlink($local_video_path);
+        }
+        catch (Exception $ex) {
+            ProcessingLogsService::log("video", $this->video->id, "unknown error while cutting video");
         }
 
-
-
-        unlink($local_video_path);
     }
 
     public function copy_to_local($s3_path)

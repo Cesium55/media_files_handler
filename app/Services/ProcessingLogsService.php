@@ -35,7 +35,7 @@ class ProcessingLogsService
         $log_obj = ProcessingLog::where("type", $type)->where("instance_id", $id)->first();
 
         if (!(bool) $log_obj) {
-            Log::channel("custom_log")->info("logs for $type[$id] was not found");
+            Log::channel("custom_log")->info("logs for " . $type . "[$id] was not found");
             return [];
 
         }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\VideoLoad;
 use App\Jobs\HandleSubsJob;
+use App\Jobs\HandleVideoDelete;
 use App\Jobs\HandleVideoJob;
 use App\Services\ProcessingLogsService;
 use Illuminate\Http\Request;
@@ -35,7 +36,16 @@ class VideoController extends Controller
         $validated = $request->validated();
 
         $video = Video::findOrFail($request["video_id"]);
+
+
+        if ($video->is_subs_cut or $video->subs) {
+            return response()->json([
+                "message" => "Subtitiles for this video have been already cut"
+            ], 409);
+        }
+
         $has_original_subs = false;
+
 
         foreach ($request->file("files") as $file) {
             $language = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -54,11 +64,7 @@ class VideoController extends Controller
 
         ProcessingLogsService::log("video", $request["video_id"], "Loading subs");
 
-        if ($video->is_subs_cut and config("app.debug") == false) {
-            return response()->json([
-                "message" => "Subtitiles for this video have been already cut"
-            ], 409);
-        }
+
 
         $data = [];
 
@@ -85,6 +91,21 @@ class VideoController extends Controller
 
         $video = Video::findOrFail($request["video_id"]);
 
+
+        if (!$video->is_subs_cut){
+            return response()->json([
+                "message" => "Subs cutting required"
+            ], 409);
+        }
+
+        if ($video->video_processed or $video->video_path) {
+            ProcessingLogsService::log("video", $video->id, "Processing video error: video has been already processed");
+            return response()->json([
+                "message" => "Video already uploaded"
+            ], 409);
+        }
+
+
         $thumb_path = Storage::disk("s3")->put(
             "thumbs/$video->id",
             $request->file("thumb")
@@ -98,11 +119,32 @@ class VideoController extends Controller
         $video->video_path = $video_path;
         $video->thumb_path = $thumb_path;
 
+
         $video->save();
+
+
+        ProcessingLogsService::log("video", $video->id, "Thumb and video loaded");
 
         HandleVideoJob::dispatch($video);
 
         return $video;
+    }
+
+
+    function delete(Request $request)
+    {
+        $validated = $request->validate([
+            "video_id" => "required|int|min:1"
+        ]);
+
+        $video = Video::findOrFail($validated["video_id"]);
+
+        HandleVideoDelete::dispatch($video);
+
+        return response()->json([
+            "message" => "Video will be deleted"
+        ]);
+
     }
 
     function get_all()

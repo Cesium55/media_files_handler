@@ -23,6 +23,7 @@ class SubsLoad extends FormRequest
     {
         return [
             "video_id" => "required|int",
+            'files' => ['required', 'array'],
             "files.*" => [
                 "required",
                 "mimes:srt",

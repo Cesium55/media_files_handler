@@ -15,6 +15,7 @@ Route::prefix("v1")->group(function () {
         }
 
         Route::post("video/", [VideoController::class, "create"]);
+        Route::delete("video/", [VideoController::class, "delete"]);
         Route::post("upload-subs/", [VideoController::class, "load_subs"]);
 
         Route::get("/logs", [LogsController::class, "get_logs"]);

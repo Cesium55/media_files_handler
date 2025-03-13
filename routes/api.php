@@ -12,6 +12,7 @@ Route::prefix("v1")->group(function () {
     Route::prefix("videos")->group(function () {
         if (config("app.debug")){
             Route::get("all/", [VideoController::class, "get_all"]);
+            Route::post("recut/", [VideoController::class, "recut"]);
         }
 
         Route::post("video/", [VideoController::class, "create"]);

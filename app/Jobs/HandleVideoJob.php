@@ -79,6 +79,9 @@ class HandleVideoJob implements ShouldQueue
 
             ProcessingLogsService::log("video", $this->video->id, "all clips processed");
 
+            $this->video->video_processed = true;
+            $this->video->save();
+
             unlink($local_video_path);
         }
         catch (Exception $ex) {

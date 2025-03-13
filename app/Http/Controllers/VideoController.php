@@ -151,4 +151,14 @@ class VideoController extends Controller
     {
         return Video::all();
     }
+
+    function recut(Request $request){
+        $validated = $request->validate([
+            "video_id" => "required|int|min:1"
+        ]);
+
+        $video = Video::findOrFail($validated["video_id"]);
+
+        HandleVideoJob::dispatch($video);
+    }
 }

@@ -42,15 +42,14 @@ class HandleVideoDelete implements ShouldQueue
 
             foreach ($clips as $clip) {
                 Log::channel("custom_log")->info("Deleting clip");
-                if ($clip->video_path and Storage::disk("s3")->exists($clip->video_path)) {
-                    Log::channel("custom_log")->info(message: "Deleting clip video");
-                    Storage::disk("s3")->delete($clip->video_path);
-                }
+
+                Log::channel("custom_log")->info(message: "Deleting clip video");
+                HandleVideoDelete::softDeleteFile($clip->video_path);
+
+
                 foreach ($clip->subs as $lang => $path) {
-                    if ($path and Storage::disk("s3")->exists($path)) {
-                        Log::channel("custom_log")->info(message: "Deleting clip sub");
-                        Storage::disk("s3")->delete($path);
-                    }
+                    Log::channel("custom_log")->info(message: "Deleting clip sub");
+                    HandleVideoDelete::softDeleteFile($path);
                 }
 
                 Log::channel("custom_log")->info("Clip deleted");
@@ -61,17 +60,13 @@ class HandleVideoDelete implements ShouldQueue
             ProcessingLogsService::log("video", $this->video->id, "Clips deleted");
 
 
-            if ($this->video->video_path and Storage::disk("s3")->exists($this->video->video_path)) {
-                Storage::disk("s3")->delete($this->video->video_path);
-            }
+            HandleVideoDelete::softDeleteFile($this->video->video_path);
 
-            if ($this->video->thumb_path and Storage::disk("s3")->exists($this->video->thumb_path)) {
-                Storage::disk("s3")->delete($this->video->thumb_path);
-            }
+            HandleVideoDelete::softDeleteFile($this->video->thumb_path);
 
-            foreach ($this->video->subs as $lang => $path) {
-                if ($path and Storage::disk("s3")->exists($path)) {
-                    Storage::disk("s3")->delete($path);
+            if ($this->video->subs) {
+                foreach ($this->video->subs as $lang => $path) {
+                    HandleVideoDelete::softDeleteFile($path);
                 }
             }
 
@@ -82,7 +77,19 @@ class HandleVideoDelete implements ShouldQueue
 
         } catch (Exception $ex) {
 
+            Log::channel("custom_log")->info($ex);
             ProcessingLogsService::log("video", $this->video->id, "Unkown error while video deleting");
+        }
+    }
+
+
+    private static function softDeleteFile($path)
+    {
+        if (!is_string($path)) {
+            return;
+        }
+        if (Storage::disk("s3")->exists($path)) {
+            Storage::disk("s3")->delete($path);
         }
     }
 }

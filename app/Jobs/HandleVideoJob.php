@@ -41,9 +41,7 @@ class HandleVideoJob implements ShouldQueue
         try{
             ProcessingLogsService::log("video", $this->video->id, "Video cutting started");
 
-            $ffmpeg = FFMpeg::create();
             $local_video_path = $this->copy_to_local($this->video->video_path);
-            $video_ffmeg = $ffmpeg->open($local_video_path);
 
             $intervals = $this->video->clip_intervals;
 
@@ -54,14 +52,15 @@ class HandleVideoJob implements ShouldQueue
 
             for ($i = 0; $i < count($intervals); $i++) {
                 $clipLocalPath = storage_path("app/temp/clip_{$i}.mp4");
-                $video_ffmeg->filters()->clip(
-                    \FFMpeg\Coordinate\TimeCode::fromSeconds($intervals[$i][0]),
-                    \FFMpeg\Coordinate\TimeCode::fromSeconds($intervals[$i][1] - $intervals[$i][0])
-                );
 
-                $video_ffmeg->save(new X264(), $clipLocalPath);
+                $start = $intervals[$i][0];
+                $end = $intervals[$i][1];
 
+                $this->cutVideo($local_video_path, $clipLocalPath, $start, $end);
+
+                Log::channel("custom_log")->info("Clip $i before cutting");
                 $clip = Clip::where("title", "clip_{$this->video->id}_{$i}")->first();
+                Log::channel("custom_log")->info("Clip $i after cutting");
 
                 $s3_clip_path = "clips/{$this->video->id}/clip_{$i}.mp4";
                 $this->copy_to_s3($s3_clip_path, $clipLocalPath);
@@ -119,5 +118,31 @@ class HandleVideoJob implements ShouldQueue
     public function copy_to_s3($s3_path, $local_path)
     {
         Storage::disk('s3')->put($s3_path, file_get_contents($local_path));
+    }
+
+
+    public function cutVideo($inputFile, $outputFile, $start, $end) {
+        if (!file_exists($inputFile)) {
+            throw new Exception("File $inputFile not found.");
+        }
+
+        $startFormatted = number_format($start, 3, '.', '');
+        $duration = number_format($end - $start, 3, '.', '');
+
+        if ($duration <= 0) {
+            throw new Exception("Incorrect video length.");
+        }
+
+        $command = "ffmpeg -y -hwaccel cuda -hwaccel_output_format cuda -i " . escapeshellarg($inputFile) .
+            " -ss " . escapeshellarg($startFormatted) .
+            " -t " . escapeshellarg($duration) .
+            " -c:v h264_nvenc -preset p4 -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 " .
+            escapeshellarg($outputFile) . " 2>&1";
+
+        $output = shell_exec($command);
+
+        if (!file_exists($outputFile) || filesize($outputFile) == 0) {
+            throw new Exception("Error while video cutting: $output");
+        }
     }
 }

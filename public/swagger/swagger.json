@@ -1,0 +1,145 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "API",
+        "description": "Media handler service api",
+        "version": "1.0.0"
+    },
+    "host": "localhost:8001",
+    "basePath": "/api/v1",
+    "schemes": [
+        "http"
+    ],
+    "tags": [
+        "media"
+    ],
+    "paths": {
+        "/videos/{video_id}": {
+            "get": {
+                "summary": "Get video",
+                "description": "Get video by id",
+                "operationId": "getVideo",
+                "parameters": [
+                    {
+                        "name": "video_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/Video"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Video": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1
+                },
+                "title": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "video_path": {
+                    "type": "string"
+                },
+                "thumb_path": {
+                    "type": "string"
+                },
+                "is_subs_cut": {
+                    "type": "boolean"
+                },
+                "video_processed": {
+                    "type": "boolean"
+                },
+                "subs": {
+                    "type": [
+                        "null",
+                        "object"
+                    ],
+                    "example": {
+                        "rus": "path/to/rus/subs.srt",
+                        "eng": "path/to/eng/subs.srt"
+                    }
+                },
+                "clip_intervals": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "number",
+                            "format": "float"
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                    },
+                    "example": [
+                        [
+                            5.2,
+                            8.0
+                        ],
+                        [
+                            12.1,
+                            15.3
+                        ]
+                    ]
+                },
+                "created_at": {
+                    "type": "string",
+                    "example":"2025-03-13T02:20:17.000000Z",
+                    "description": "datetime in utc"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example":"2025-03-13T02:20:17.000000Z",
+                    "description": "datetime in utc"
+                }
+            },
+            "xml": {
+                "name": "Video"
+            }
+        },
+        "Error": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

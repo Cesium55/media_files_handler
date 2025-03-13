@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Support\Facades\Log;
 use ReturnTypeWillChange;
+use App\Services\VideoService;
 
 class VideoController extends Controller
 {
@@ -160,5 +161,19 @@ class VideoController extends Controller
         $video = Video::findOrFail($validated["video_id"]);
 
         HandleVideoJob::dispatch($video);
+    }
+
+
+
+    public function get_video(int $video_id){
+
+
+        $videoService = new VideoService();
+
+        return $videoService->get($video_id);
+    }
+
+    public function get_video_logs(int $video_id){
+        return ProcessingLogsService::get_logs("video", $video_id);
     }
 }

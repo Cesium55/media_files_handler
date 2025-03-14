@@ -53,6 +53,7 @@ class HandleVideoJob implements ShouldQueue
                 "Intervals created (" . count($intervals) . " intervals)");
 
             for ($i = $this->start; $i < count($intervals); $i++) {
+                $start_time = microtime(true);
                 $clipLocalPath = storage_path("app/temp/clip_{$i}.mp4");
 
                 $start = $intervals[$i][0];
@@ -73,9 +74,12 @@ class HandleVideoJob implements ShouldQueue
 
                 unlink($clipLocalPath);
 
+                $end_time = microtime(true);
+                $executionTime = $end_time - $start_time;
+
                 ProcessingLogsService::log("clip", $clip->id, "video processed");
                 ProcessingLogsService::log("video", $this->video->id, "clip {$i} processed");
-                Log::channel("custom_log")->info("Clip {$i} for video {$this->video->id} processed");
+                Log::channel("custom_log")->info("Clip {$i} for video {$this->video->id} processed({$executionTime})");
             }
 
             ProcessingLogsService::log("video", $this->video->id, "all clips processed");

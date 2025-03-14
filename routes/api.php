@@ -29,10 +29,10 @@ Route::prefix("v1")->group(function () {
         }
 
         Route::post("/video", [VideoController::class, "create"]);
-        Route::delete("/video", [VideoController::class, "delete"]);
+
         Route::post("/upload-subs", [VideoController::class, "load_subs"]);
 
-        Route::get("/logs", [LogsController::class, "get_logs"]);
+        // Route::get("/logs", [LogsController::class, "get_logs"]);
 
         Route::post("/upload-video", [VideoController::class, "load_video"]);
 
@@ -41,7 +41,7 @@ Route::prefix("v1")->group(function () {
 
 
 
-
+        Route::delete("/{video_id}", [VideoController::class, "delete"]);
         Route::get("/{video_id}", [VideoController::class, "get_video"]);
         Route::get("/{video_id}/logs", [VideoController::class, "get_video_logs"]);
     });

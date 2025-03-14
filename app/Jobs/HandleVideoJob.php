@@ -23,13 +23,15 @@ class HandleVideoJob implements ShouldQueue
 
 
     public Video $video;
+    public int $start;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(Video $video)
+    public function __construct(Video $video, int $start=0)
     {
         $this->video = $video;
+        $this->start = $start;
     }
 
     /**
@@ -50,7 +52,7 @@ class HandleVideoJob implements ShouldQueue
                 $this->video->id,
                 "Intervals created (" . count($intervals) . " intervals)");
 
-            for ($i = 0; $i < count($intervals); $i++) {
+            for ($i = $this->start; $i < count($intervals); $i++) {
                 $clipLocalPath = storage_path("app/temp/clip_{$i}.mp4");
 
                 $start = $intervals[$i][0];

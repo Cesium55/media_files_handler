@@ -132,20 +132,15 @@ class VideoController extends Controller
     }
 
 
-    function delete(Request $request)
+    function delete(int $video_id)
     {
-        $validated = $request->validate([
-            "video_id" => "required|int|min:1"
-        ]);
-
-        $video = Video::findOrFail($validated["video_id"]);
+        $video = Video::findOrFail($video_id);
 
         HandleVideoDelete::dispatch($video);
 
         return response()->json([
             "message" => "Video will be deleted"
         ]);
-
     }
 
     function get_all()
@@ -155,12 +150,15 @@ class VideoController extends Controller
 
     function recut(Request $request){
         $validated = $request->validate([
-            "video_id" => "required|int|min:1"
+            "video_id" => "required|int|min:1",
+            "start_clip" => "nullable|int|min:0"
         ]);
+        $validated["start_clip"] = $request->input("start_clip", 0);
+
 
         $video = Video::findOrFail($validated["video_id"]);
 
-        HandleVideoJob::dispatch($video);
+        HandleVideoJob::dispatch($video, $validated["start_clip"]);
     }
 
 

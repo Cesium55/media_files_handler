@@ -7,10 +7,7 @@ use Illuminate\Http\Request;
 
 class ClipsController extends Controller
 {
-    function get_clips(Request $request){
-        $request->validate([
-            "video_id" => "required|int|min:1"
-        ]);
-        return Clip::where("video_id", $request["video_id"])->get();
+    function get_clips(int $video_id){
+        return Clip::where("video_id", $video_id)->get();
     }
 }

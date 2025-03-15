@@ -22,7 +22,7 @@ class SubsLoad extends FormRequest
     public function rules(): array
     {
         return [
-            "video_id" => "required|int",
+            // "video_id" => "required|int",
             'files' => ['required', 'array'],
             "files.*" => [
                 "required",

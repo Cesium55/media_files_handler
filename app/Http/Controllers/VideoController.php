@@ -14,7 +14,6 @@ use App\Http\Requests\SubsLoad;
 use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Support\Facades\Log;
-use ReturnTypeWillChange;
 use App\Services\VideoService;
 
 class VideoController extends Controller
@@ -32,11 +31,11 @@ class VideoController extends Controller
         return $video;
     }
 
-    function load_subs(SubsLoad $request)
+    function load_subs(SubsLoad $request, int $video_id)
     {
         $validated = $request->validated();
 
-        $video = Video::findOrFail($request["video_id"]);
+        $video = Video::findOrFail($video_id);
 
 
         if ($video->is_subs_cut or $video->subs) {
@@ -63,16 +62,16 @@ class VideoController extends Controller
         }
 
 
-        ProcessingLogsService::log("video", $request["video_id"], "Loading subs");
+        ProcessingLogsService::log("video", $video_id, "Loading subs");
 
 
 
         $data = [];
 
-        Log::channel("custom_log")->info("Video with id={$request['video_id']} loading subs");
+        Log::channel("custom_log")->info("Video with id={$video_id} loading subs");
         foreach ($request->file("files") as $file) {
             $language = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            $path = Storage::disk('s3')->put("subtitles/videos/{$request['video_id']}", $file);
+            $path = Storage::disk('s3')->put("subtitles/videos/{$video_id}", $file);
             $data[$language] = $path;
         }
 
@@ -81,16 +80,16 @@ class VideoController extends Controller
 
         HandleSubsJob::dispatch($video);
 
-        $data["video_id"] = $request["video_id"];
+        $data["video_id"] = $video_id;
         return $video;
 
     }
 
-    function load_video(VideoLoad $request)
+    function load_video(VideoLoad $request, int $video_id)
     {
         // $request->validated();
 
-        $video = Video::findOrFail($request["video_id"]);
+        $video = Video::findOrFail($video_id);
 
 
         if (!$video->is_subs_cut){

@@ -22,7 +22,7 @@ class VideoLoad extends FormRequest
     public function rules(): array
     {
         return [
-            "video_id" => ["required", "int", "min:1"],
+            // "video_id" => ["required", "int", "min:1"],
             "video" => ["file", "required", "mimes:mp4"],
             "thumb" => ["file", "required", "mimes:png,jpg,jpeg"]
         ];

@@ -6,12 +6,14 @@ use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\VideoController;
+use App\Http\Middleware\AuthMiddleware;
 
 
 Route::prefix("v1")->group(function () {
     Route::prefix("videos")->group(function () {
         if (config("app.debug")) {
-            Route::get("all/", [VideoController::class, "get_all"]);
+            Route::get("all/", [VideoController::class, "get_all"])
+            ->middleware(AuthMiddleware::class . ":admin");
             Route::post("recut/", [VideoController::class, "recut"]);
 
 

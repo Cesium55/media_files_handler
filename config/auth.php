@@ -112,4 +112,16 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    "auth_service" => [
+        "protocol" => "http",
+        "ip" => "127.0.0.1",
+        "port" => "8000",
+        "endpoints" => [
+            "user_auth" => "/api/v1/user/auth",
+            "api_auth" => "/api/v1/auth",
+            "default_auth" => "/api/v1/auth",
+            "get_public_key" => "api/v1/public-key"
+        ]
+    ]
+
 ];

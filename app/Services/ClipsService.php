@@ -59,29 +59,48 @@ class ClipsService
     }
 
 
-    public function timingBinarySearch(array $segments, float $target)
+    public function timingBinarySearch(array $timings, float $timing)
     {
+        $left = 0;
+        $right = count($timings) - 1;
+        $index = -1;
 
+        while ($left <= $right) {
+            $mid = intdiv($left + $right, 2);
+            list($start, $end) = $timings[$mid];
 
-        // Log::info($target);
-        // Log::info($segments[0]);
-
-        $bestIndex = -1;
-        $maxDepth = 0;
-
-        foreach ($segments as $index => $segment) {
-            list($start, $end) = $segment;
-
-            if ($target >= $start && $target <= $end) {
-                $depth = min($target - $start, $end - $target);
-
-                if ($bestIndex === -1 || $depth > $maxDepth) {
-                    $bestIndex = $index;
-                    $maxDepth = $depth;
-                }
+            if ($start <= $timing && $timing <= $end) {
+                $index = $mid;
+                break;
+            } elseif ($timing < $start) {
+                $right = $mid - 1;
+            } else {
+                $left = $mid + 1;
             }
         }
 
-        return $bestIndex;
+        if ($index == -1) {
+            return $index;
+        }
+
+        if (
+            $index != count($timings) - 1 &&
+            $timings[$index + 1][0] <= $timing && $timing <= $timings[$index + 1][1] &&
+            min(abs($timings[$index + 1][0] - $timing), abs($timings[$index + 1][1] - $timing)) >
+            min(abs($timings[$index][0] - $timing), abs($timings[$index][1] - $timing))
+        ) {
+            return $index + 1;
+        }
+
+        if (
+            $index != 0 &&
+            $timings[$index - 1][0] <= $timing && $timing <= $timings[$index - 1][1] &&
+            min(abs($timings[$index - 1][0] - $timing), abs($timings[$index - 1][1] - $timing)) >
+            min(abs($timings[$index][0] - $timing), abs($timings[$index][1] - $timing))
+        ) {
+            return $index - 1;
+        }
+
+        return $index;
     }
 }

@@ -173,4 +173,8 @@ class VideoController extends Controller
     public function get_video_logs(int $video_id){
         return ProcessingLogsService::get_logs("video", $video_id);
     }
+
+    public function getAllPaginated(VideoService $videoService){
+        return $videoService->getAllPaginated();
+    }
 }

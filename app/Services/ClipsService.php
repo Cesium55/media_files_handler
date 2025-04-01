@@ -103,4 +103,28 @@ class ClipsService
 
         return $index;
     }
+
+
+
+    function getClipsPaginated(int $video_id){
+
+        $page = request()->get("page", 1);
+
+        $clips = Cache::get("clips_paginated_{$video_id}_{$page}");
+
+        if($clips){
+            return $clips;
+        }
+
+        $clips = Clip::where("video_id", $video_id)->paginate(10);
+
+        if ($clips->isEmpty()){
+            return $clips;
+        }
+
+
+        Cache::set("clips_paginated_{$video_id}_{$page}", $clips, config("cache.defaul_cache_ttl"));
+
+        return $clips;
+    }
 }

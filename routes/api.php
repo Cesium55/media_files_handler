@@ -12,7 +12,7 @@ use App\Http\Middleware\AuthMiddleware;
 Route::prefix("v1")->group(function () {
     Route::prefix("videos")->group(function () {
         if (config("app.debug")) {
-            Route::get("all/", [VideoController::class, "get_all"]);
+            Route::get("all/", [VideoController::class, "getAllPaginated"]);
             // ->middleware(AuthMiddleware::class . ":admin");
             Route::post("recut/", [VideoController::class, "recut"]);
 
@@ -30,6 +30,8 @@ Route::prefix("v1")->group(function () {
             });
         }
 
+        Route::get("/", [VideoController::class, "getAllPaginated"]);
+
 
         Route::get("/{video_id}/clips", [ClipsController::class, "get_clips"]);
 
@@ -41,5 +43,12 @@ Route::prefix("v1")->group(function () {
         Route::get("/{video_id}/logs", [VideoController::class, "get_video_logs"]);
 
         Route::get("/{video_id}/clip-by-timing", [ClipsController::class, "getClipByTiming"]);
+
+
+        Route::get("/{video_id}/clips-paginated", [ClipsController::class, "getClipPaginated"]);
+    });
+
+    Route::prefix("clips")->group(function (){
+        Route::get("/{clip_id}", [ClipsController::class, "getClip"]);
     });
 });

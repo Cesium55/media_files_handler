@@ -45,7 +45,7 @@ Route::prefix("v1")->group(function () {
         Route::get("/{video_id}/clip-by-timing", [ClipsController::class, "getClipByTiming"]);
 
 
-        Route::get("/{video_id}/clips-paginated", [ClipsController::class, "getClipPaginated"]);
+        // Route::get("/{video_id}/clips-paginated", [ClipsController::class, "getClipPaginated"]);
     });
 
     Route::prefix("clips")->group(function (){

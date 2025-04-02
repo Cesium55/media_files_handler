@@ -18,13 +18,12 @@ class ClipsController extends Controller
         return $clipsService->getClipsPaginated($video_id);
     }
 
-    function getClipByTiming(Request $request, ClipsService $clipsService){
+    function getClipByTiming(int $video_id, Request $request, ClipsService $clipsService){
         $validated = $request->validate([
             "timing" => "required|numeric",
-            "video_id" => "required|int|min:1"
         ]);
 
-        return $clipsService->getClipByTiming($validated["video_id"], $validated["timing"]);
+        return $clipsService->getClipByTiming($video_id, $validated["timing"]);
     }
 
 

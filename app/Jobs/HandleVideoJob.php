@@ -120,7 +120,7 @@ class HandleVideoJob implements ShouldQueue
         $local_video_path = $this->copy_to_local($this->video->video_path);
 
         $temp_dir = $this->getOwnTempDir();
-        if(!file_exists($temp_dir)){
+        if (!file_exists($temp_dir)) {
             mkdir($temp_dir, recursive: true);
         }
 
@@ -146,7 +146,8 @@ class HandleVideoJob implements ShouldQueue
         return $fragments_paths;
     }
 
-    public function getOwnTempDir(){
+    public function getOwnTempDir()
+    {
         return storage_path("app/temp/{$this->video->id}");
     }
 
@@ -261,11 +262,23 @@ class HandleVideoJob implements ShouldQueue
             throw new Exception("Incorrect video length.");
         }
 
-        $command = "ffmpeg -y -hwaccel cuda -hwaccel_output_format cuda -i " . escapeshellarg($inputFile) .
-            " -ss " . escapeshellarg($startFormatted) .
-            " -t " . escapeshellarg($duration) .
-            " -c:v h264_nvenc -preset p4 -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 " .
-            escapeshellarg($outputFile) . " 2>&1";
+        if (config("media_files.gpu_handling")) {
+            $command = "ffmpeg -y -hwaccel cuda -hwaccel_output_format cuda -i " . escapeshellarg($inputFile) .
+                " -ss " . escapeshellarg($startFormatted) .
+                " -t " . escapeshellarg($duration) .
+                " -c:v h264_nvenc -preset p4 -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 " .
+                escapeshellarg($outputFile) . " 2>&1";
+        }
+        else{
+            $command = "ffmpeg -y -i " . escapeshellarg($inputFile) .
+           " -ss " . escapeshellarg($startFormatted) .
+           " -t " . escapeshellarg($duration) .
+           " -c:v libx264 -preset medium -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 " .
+           escapeshellarg($outputFile) . " 2>&1";
+
+        }
+
+        Log::channel("custom_log")->info("Command: $command");
 
         $output = shell_exec($command);
 

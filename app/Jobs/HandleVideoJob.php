@@ -2,20 +2,25 @@
 
 namespace App\Jobs;
 
+use App\Jobs\base\ClearTempFilesBaseJob;
 use App\Models\Clip;
 use App\Models\Video;
 use App\Services\ProcessingLogsService;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Throwable;
+
 
 class HandleVideoJob implements ShouldQueue
 {
     use Queueable;
-
+    protected string $jobCacheKey;
 
 
     public Video $video;
@@ -24,10 +29,10 @@ class HandleVideoJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(Video $video, int $start = 0)
+    public function __construct(Video $video)
     {
         $this->video = $video;
-        $this->start = $start;
+        $this->jobCacheKey = 'job_handle_video:' . $this->video->id;
     }
 
     /**
@@ -38,10 +43,22 @@ class HandleVideoJob implements ShouldQueue
         $this->processVideo();
     }
 
+    public function addTempFile(string $filePath): void
+    {
+
+        $files = cache()->get($this->jobCacheKey, []);
+        $files = Cache::get($this->jobCacheKey, []);
+        $files[] = $filePath;
+        Cache::set($this->jobCacheKey, $files);
+
+    }
+
+
 
 
     public function processVideo()
     {
+
 
         // new_intervals structure:
 
@@ -221,6 +238,7 @@ class HandleVideoJob implements ShouldQueue
     {
         $temp_name = Str::uuid();
         $localPath = storage_path("app/temp/$temp_name.mp4");
+        $this->addTempFile($localPath);
 
         Log::channel("custom_log")->info("Trying to copy from s3");
         Log::channel("custom_log")->info("From " . $s3_path);
@@ -251,6 +269,8 @@ class HandleVideoJob implements ShouldQueue
 
     public function cutVideo($inputFile, $outputFile, $start, $end)
     {
+
+        $this->addTempFile($outputFile);
         if (!file_exists($inputFile)) {
             throw new Exception("File $inputFile not found.");
         }
@@ -285,5 +305,36 @@ class HandleVideoJob implements ShouldQueue
         if (!file_exists($outputFile) || filesize($outputFile) == 0) {
             throw new Exception("Error while video cutting: $output");
         }
+    }
+
+
+
+    protected function deleteTempFiles(): void
+    {
+        $files = cache()->get($this->jobCacheKey, []);
+
+
+        foreach ($files as $filePath) {
+            if (file_exists($filePath)) {
+                @unlink($filePath);
+            }
+        }
+
+        if (File::exists($this->getOwnTempDir())){
+            rmdir($this->getOwnTempDir());
+        }
+
+
+
+        Cache::forget($this->jobCacheKey);
+
+
+
+
+    }
+    public function failed(Throwable $exception): void
+    {
+        Log::info("Job failed deleting temp files");
+        $this->deleteTempFiles();
     }
 }

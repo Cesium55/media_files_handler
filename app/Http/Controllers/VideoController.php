@@ -147,17 +147,12 @@ class VideoController extends Controller
         return Video::all();
     }
 
-    function recut(Request $request){
-        $validated = $request->validate([
-            "video_id" => "required|int|min:1",
-            "start_clip" => "nullable|int|min:0"
-        ]);
-        $validated["start_clip"] = $request->input("start_clip", 0);
+    function recut(int $video_id){
 
 
-        $video = Video::findOrFail($validated["video_id"]);
+        $video = Video::findOrFail($video_id);
 
-        HandleVideoJob::dispatch($video, $validated["start_clip"]);
+        HandleVideoJob::dispatch($video);
     }
 
 

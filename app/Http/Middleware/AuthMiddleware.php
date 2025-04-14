@@ -26,12 +26,15 @@ class AuthMiddleware
     public function handle(Request $request, Closure $next, string $auth_role): Response
     {
 
+        if (config("auth.debug_disable_auth") && config("app.debug")){
+            return $next($request);
+        }
 
         if(!in_array($auth_role, ["admin", "authorized"])){
             return response()->json(["message" => "Server error: Unkown role"], 500);
         }
 
-        $token = $request->header("Authorization");
+        $token = $request->bearerToken();
 
         if(!$token){
             return response()->json(["message" => "No access token provided"], 401);
@@ -63,8 +66,10 @@ class AuthMiddleware
             $publicKey = Cache::get("auth_public_key");
 
             if (!$publicKey) {
+                Log::error("no auth public token");
                 throw new Exception("Public key not found!");
             }
+
 
             return JWT::decode($token, new Key($publicKey, 'RS256'), );
         } catch (Exception $e) {

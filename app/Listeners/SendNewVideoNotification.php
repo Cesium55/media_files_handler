@@ -20,7 +20,7 @@ class SendNewVideoNotification
      */
     public function __construct()
     {
-        $this->endpoints = ["http://localhost:8000/asdasdas", "http://localhost:8000/api/v1/api/auth", "http://localhost:8000/zxczxc"];
+        $this->endpoints = config('notifications.new_video_event_listener_endpoints');
     }
 
     /**

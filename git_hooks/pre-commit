@@ -1,0 +1,13 @@
+#!/bin/sh
+
+echo "Running Laravel tests..."
+
+./vendor/bin/pest
+
+if [ $? -ne 0 ]
+  echo "Tests failed. Commit aborted."
+  exit 1
+fi
+
+echo "All tests passed. Proceeding with commit."
+exit 0

@@ -75,7 +75,12 @@
                     }
                 }
             },
-            "delete":{
+            "delete": {
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
                 "summary": "Delete video",
                 "description": "Delete video by id",
                 "operationId": "deleteVideo",
@@ -144,6 +149,11 @@
             }
         },
         "/videos/{video_id}/upload-subs": {
+            "security": [
+                {
+                    "bearerAuth": []
+                }
+            ],
             "post": {
                 "summary": "Upload subs",
                 "description": "Upload srt files, 'Original.srt' is nesessary file , allowed filenames = [deu, fra, spa, rus, eng, ita].srt",
@@ -222,6 +232,11 @@
             }
         },
         "/videos/{video_id}/upload-video": {
+            "security": [
+                {
+                    "bearerAuth": []
+                }
+            ],
             "post": {
                 "summary": "Upload video",
                 "description": "Upload video and thumb",
@@ -245,7 +260,7 @@
                                     "video": {
                                         "type": "file"
                                     },
-                                    "thumb":{
+                                    "thumb": {
                                         "type": "file"
                                     }
                                 }
@@ -434,6 +449,11 @@
         },
         "/videos/video": {
             "post": {
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
                 "summary": "Create video",
                 "description": "Create video",
                 "operationId": "videoCreate",
@@ -730,6 +750,13 @@
         }
     },
     "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        },
         "schemas": {
             "Video": {
                 "type": "object",

@@ -112,25 +112,23 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
-    "debug_disable_auth" => env('DEBUG_DISABLE_AUTH', false),
+    'debug_disable_auth' => env('DEBUG_DISABLE_AUTH', false),
 
-
-    "auth_service" => [
-        "protocol" => "http",
-        "ip" => "127.0.0.1",
-        "port" => "8000",
-        "endpoints" => [
-            "user_auth" => "api/v1/user/auth",
-            "api_auth" => "api/v1/api/auth",
-            "default_auth" => "api/v1/auth",
-            "get_public_key" => "api/v1/public-key",
-            "api_login" => "api/v1/api/login"
-        ]
+    'auth_service' => [
+        'protocol' => 'http',
+        'ip' => '127.0.0.1',
+        'port' => '8000',
+        'endpoints' => [
+            'user_auth' => 'api/v1/user/auth',
+            'api_auth' => 'api/v1/api/auth',
+            'default_auth' => 'api/v1/auth',
+            'get_public_key' => 'api/v1/public-key',
+            'api_login' => 'api/v1/api/login',
+        ],
 
     ],
 
-    "own_service_name" => env('OWN_SERVICE_NAME', "media_handler_service"),
-    "own_service_secret" => env('OWN_SERVICE_SECRET', "")
-
+    'own_service_name' => env('OWN_SERVICE_NAME', 'media_handler_service'),
+    'own_service_secret' => env('OWN_SERVICE_SECRET', ''),
 
 ];

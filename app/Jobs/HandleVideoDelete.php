@@ -4,17 +4,16 @@ namespace App\Jobs;
 
 use App\Models\Clip;
 use App\Models\Video;
+use App\Services\ProcessingLogsService;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use App\Services\ProcessingLogsService;
 
 class HandleVideoDelete implements ShouldQueue
 {
     use Queueable;
-
 
     public Video $video;
 
@@ -32,33 +31,30 @@ class HandleVideoDelete implements ShouldQueue
     public function handle(): void
     {
         try {
-            ProcessingLogsService::log("video", $this->video->id, "Video deleting started");
-            Log::channel("custom_log")->info("Video deleting started");
+            ProcessingLogsService::log('video', $this->video->id, 'Video deleting started');
+            Log::channel('custom_log')->info('Video deleting started');
 
-            $clips = Clip::where("video_id", $this->video->id)->get();
+            $clips = Clip::where('video_id', $this->video->id)->get();
 
-
-            Log::channel("custom_log")->info("Got " . count($clips) . " clips");
+            Log::channel('custom_log')->info('Got '.count($clips).' clips');
 
             foreach ($clips as $clip) {
-                Log::channel("custom_log")->info("Deleting clip");
+                Log::channel('custom_log')->info('Deleting clip');
 
-                Log::channel("custom_log")->info(message: "Deleting clip video");
+                Log::channel('custom_log')->info(message: 'Deleting clip video');
                 HandleVideoDelete::softDeleteFile($clip->video_path);
 
-
                 foreach ($clip->subs as $lang => $path) {
-                    Log::channel("custom_log")->info(message: "Deleting clip sub");
+                    Log::channel('custom_log')->info(message: 'Deleting clip sub');
                     HandleVideoDelete::softDeleteFile($path);
                 }
 
-                Log::channel("custom_log")->info("Clip deleted");
+                Log::channel('custom_log')->info('Clip deleted');
             }
 
-            Clip::where("video_id", $this->video->id)->delete();
+            Clip::where('video_id', $this->video->id)->delete();
 
-            ProcessingLogsService::log("video", $this->video->id, "Clips deleted");
-
+            ProcessingLogsService::log('video', $this->video->id, 'Clips deleted');
 
             HandleVideoDelete::softDeleteFile($this->video->video_path);
 
@@ -72,24 +68,22 @@ class HandleVideoDelete implements ShouldQueue
 
             $this->video->delete();
 
-            ProcessingLogsService::log("video", $this->video->id, "Video deleted");
-
+            ProcessingLogsService::log('video', $this->video->id, 'Video deleted');
 
         } catch (Exception $ex) {
 
-            Log::channel("custom_log")->info($ex);
-            ProcessingLogsService::log("video", $this->video->id, "Unkown error while video deleting");
+            Log::channel('custom_log')->info($ex);
+            ProcessingLogsService::log('video', $this->video->id, 'Unkown error while video deleting');
         }
     }
 
-
     private static function softDeleteFile($path)
     {
-        if (!is_string($path)) {
+        if (! is_string($path)) {
             return;
         }
-        if (Storage::disk("s3")->exists($path)) {
-            Storage::disk("s3")->delete($path);
+        if (Storage::disk('s3')->exists($path)) {
+            Storage::disk('s3')->delete($path);
         }
     }
 }

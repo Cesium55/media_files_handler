@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -30,19 +29,19 @@ class CacheAuthPublicKey extends Command
     public function handle()
     {
         $response = Http::get(
-            config("auth.auth_service.protocol") . "://" .
-            config("auth.auth_service.ip") . ":" .
-            config("auth.auth_service.port") . "/" .
-            config("auth.auth_service.endpoints.get_public_key")
+            config('auth.auth_service.protocol').'://'.
+            config('auth.auth_service.ip').':'.
+            config('auth.auth_service.port').'/'.
+            config('auth.auth_service.endpoints.get_public_key')
         );
 
-
-        if (!$response->successful()){
+        if (! $response->successful()) {
             $status = $response->status();
-            Log::channel("custom")->error("Error while getting auth public key({$status})");
+            Log::channel('custom')->error("Error while getting auth public key({$status})");
+
             return;
         }
 
-        Cache::set("auth_public_key", $response->json()["key"]);
+        Cache::set('auth_public_key', $response->json()['key']);
     }
 }

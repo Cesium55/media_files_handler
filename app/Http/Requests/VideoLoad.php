@@ -23,8 +23,8 @@ class VideoLoad extends FormRequest
     {
         return [
             // "video_id" => ["required", "int", "min:1"],
-            "video" => ["file", "required", "mimes:mp4"],
-            "thumb" => ["file", "required", "mimes:png,jpg,jpeg"]
+            'video' => ['file', 'required', 'mimes:mp4'],
+            'thumb' => ['file', 'required', 'mimes:png,jpg,jpeg'],
         ];
     }
 }

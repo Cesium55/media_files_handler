@@ -13,27 +13,29 @@ class ClipsController extends Controller
     //     return Clip::where("video_id", $video_id)->get();
     // }
 
-
-    function get_clips(int $video_id, ClipsService $clipsService){
+    public function get_clips(int $video_id, ClipsService $clipsService)
+    {
         return $clipsService->getClipsPaginated($video_id);
     }
 
-    function getClipByTiming(int $video_id, Request $request, ClipsService $clipsService){
+    public function getClipByTiming(int $video_id, Request $request, ClipsService $clipsService)
+    {
         $validated = $request->validate([
-            "timing" => "required|numeric",
+            'timing' => 'required|numeric',
         ]);
 
-        return $clipsService->getClipByTiming($video_id, $validated["timing"]);
+        return $clipsService->getClipByTiming($video_id, $validated['timing']);
     }
 
-
-    function getClipPaginated(int $video_id, ClipsService $clipsService){
+    public function getClipPaginated(int $video_id, ClipsService $clipsService)
+    {
         return $clipsService->getClipsPaginated($video_id);
     }
 
-    function getClip(int $clip_id){
+    public function getClip(int $clip_id)
+    {
         $clip = Cache::get("clip_{$clip_id}");
-        if ($clip){
+        if ($clip) {
             return $clip;
         }
 
@@ -44,6 +46,4 @@ class ClipsController extends Controller
         return $clip;
 
     }
-
 }
-

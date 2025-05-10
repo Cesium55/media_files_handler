@@ -4,34 +4,29 @@ namespace App\Services;
 
 use App\Models\Clip;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 class ClipsService
 {
-
-
-
     public function getVideoClips(int $video_id)
     {
-        $clips = Cache::get("video_clips" . $video_id);
+        $clips = Cache::get('video_clips'.$video_id);
 
         if ($clips != null) {
             return $clips;
         }
 
-        $clips = Clip::where("video_id", $video_id)->get();
+        $clips = Clip::where('video_id', $video_id)->get();
 
-        Cache::set("video_clips" . $video_id, $clips, 600);
+        Cache::set('video_clips'.$video_id, $clips, 600);
 
         return $clips;
 
     }
 
+    public function findByNumber(int $video_id, int $clip_number)
+    {
 
-    public function findByNumber(int $video_id, int $clip_number){
-
-
-        $clip = Clip::where("title", "clip_{$video_id}_{$clip_number}")->first();
+        $clip = Clip::where('title', "clip_{$video_id}_{$clip_number}")->first();
 
         return $clip;
 
@@ -39,25 +34,24 @@ class ClipsService
 
     public function getClipByTiming(int $video_id, float $timing)
     {
-        $videoService = new VideoService();
+        $videoService = new VideoService;
         $video = $videoService->get($video_id);
 
         $clip_number = $this->timingBinarySearch($video->clip_intervals, $timing);
 
-        if ($clip_number == -1){
-            abort(404, "Not found (wrong timing)");
+        if ($clip_number == -1) {
+            abort(404, 'Not found (wrong timing)');
         }
 
         $clip = $this->findByNumber($video_id, $clip_number);
 
-        if (!$clip){
-            abort(404, "Not found (clip not found)");
+        if (! $clip) {
+            abort(404, 'Not found (clip not found)');
         }
 
         return $clip;
 
     }
-
 
     public function timingBinarySearch(array $timings, float $timing)
     {
@@ -67,7 +61,7 @@ class ClipsService
 
         while ($left <= $right) {
             $mid = intdiv($left + $right, 2);
-            list($start, $end) = $timings[$mid];
+            [$start, $end] = $timings[$mid];
 
             if ($start <= $timing && $timing <= $end) {
                 $index = $mid;
@@ -104,26 +98,24 @@ class ClipsService
         return $index;
     }
 
+    public function getClipsPaginated(int $video_id)
+    {
 
-
-    function getClipsPaginated(int $video_id){
-
-        $page = request()->get("page", 1);
+        $page = request()->get('page', 1);
 
         $clips = Cache::get("clips_paginated_{$video_id}_{$page}");
 
-        if($clips){
+        if ($clips) {
             return $clips;
         }
 
-        $clips = Clip::where("video_id", $video_id)->paginate(10);
+        $clips = Clip::where('video_id', $video_id)->paginate(10);
 
-        if ($clips->isEmpty()){
+        if ($clips->isEmpty()) {
             return $clips;
         }
 
-
-        Cache::set("clips_paginated_{$video_id}_{$page}", $clips, config("cache.defaul_cache_ttl"));
+        Cache::set("clips_paginated_{$video_id}_{$page}", $clips, config('cache.defaul_cache_ttl'));
 
         return $clips;
     }

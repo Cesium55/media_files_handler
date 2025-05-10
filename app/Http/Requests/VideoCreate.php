@@ -23,15 +23,16 @@ class VideoCreate extends FormRequest
     public function rules(): array
     {
         return [
-            "title" => ["required", "string", "max:100"],
-            "description" => ["string","max:10000"],
-            "language" => ["string", Rule::in(config("media_files.allowed_langs"))],
+            'title' => ['required', 'string', 'max:100'],
+            'description' => ['string', 'max:10000'],
+            'language' => ['string', Rule::in(config('media_files.allowed_langs'))],
         ];
     }
 
-    public function prepareForValidation(){
+    public function prepareForValidation()
+    {
         $this->merge([
-            "description" => $this->input("description", "")
+            'description' => $this->input('description', ''),
         ]);
     }
 }

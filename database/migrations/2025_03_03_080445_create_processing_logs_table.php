@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->text('type');
             $table->json('logs')->default('{}');
-            $table->integer("instance_id")->index();
+            $table->integer('instance_id')->index();
             $table->timestamps();
         });
     }

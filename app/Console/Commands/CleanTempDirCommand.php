@@ -28,8 +28,9 @@ class CleanTempDirCommand extends Command
     {
         $tempPath = storage_path('app/temp');
 
-        if (!File::exists($tempPath)) {
+        if (! File::exists($tempPath)) {
             $this->info('Dir temp does not exists');
+
             return;
         }
 

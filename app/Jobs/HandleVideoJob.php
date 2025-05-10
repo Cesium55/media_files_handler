@@ -2,28 +2,27 @@
 
 namespace App\Jobs;
 
-use App\Jobs\base\ClearTempFilesBaseJob;
 use App\Models\Clip;
 use App\Models\Video;
 use App\Services\ProcessingLogsService;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 use Throwable;
-
 
 class HandleVideoJob implements ShouldQueue
 {
     use Queueable;
+
     protected string $jobCacheKey;
 
-
     public Video $video;
+
     public int $start;
 
     /**
@@ -32,7 +31,7 @@ class HandleVideoJob implements ShouldQueue
     public function __construct(Video $video)
     {
         $this->video = $video;
-        $this->jobCacheKey = 'job_handle_video:' . $this->video->id;
+        $this->jobCacheKey = 'job_handle_video:'.$this->video->id;
     }
 
     /**
@@ -53,12 +52,8 @@ class HandleVideoJob implements ShouldQueue
 
     }
 
-
-
-
     public function processVideo()
     {
-
 
         // new_intervals structure:
 
@@ -71,8 +66,6 @@ class HandleVideoJob implements ShouldQueue
         //         ],
         //     ]
 
-
-
         [$fragment_timings, $new_intervals] = $this->cutIntervals();
 
         $fragments_paths = $this->fragmentateVideo($fragment_timings);
@@ -81,10 +74,10 @@ class HandleVideoJob implements ShouldQueue
             $start_time = microtime(true);
             $clipLocalPath = storage_path("app/temp/clip_{$i}.mp4");
 
-            $clip_start = $new_intervals[$i]["start"];
-            $clip_end = $new_intervals[$i]["end"];
-            $fragment_index = $new_intervals[$i]["index_of_fragment"];
-            $clip_fragment_index = $new_intervals[$i]["index_in_fragment"];
+            $clip_start = $new_intervals[$i]['start'];
+            $clip_end = $new_intervals[$i]['end'];
+            $fragment_index = $new_intervals[$i]['index_of_fragment'];
+            $clip_fragment_index = $new_intervals[$i]['index_in_fragment'];
 
             $this->cutVideo(
                 $fragments_paths[$fragment_index],
@@ -93,10 +86,9 @@ class HandleVideoJob implements ShouldQueue
                 $clip_end
             );
 
-
-            Log::channel("custom_log")->info("Clip $i before cutting");
-            $clip = Clip::where("title", "clip_{$this->video->id}_{$i}")->first();
-            Log::channel("custom_log")->info("Clip $i after cutting");
+            Log::channel('custom_log')->info("Clip $i before cutting");
+            $clip = Clip::where('title', "clip_{$this->video->id}_{$i}")->first();
+            Log::channel('custom_log')->info("Clip $i after cutting");
 
             $s3_clip_path = "clips/{$this->video->id}/clip_{$i}.mp4";
             $this->copy_to_s3($s3_clip_path, $clipLocalPath);
@@ -104,20 +96,18 @@ class HandleVideoJob implements ShouldQueue
             $clip->video_path = $s3_clip_path;
             $clip->save();
 
-
             unlink($clipLocalPath);
 
             $end_time = microtime(true);
             $executionTime = $end_time - $start_time;
 
-            ProcessingLogsService::log("clip", $clip->id, "video processed");
-            ProcessingLogsService::log("video", $this->video->id, "clip {$i} processed({$executionTime})");
-            Log::channel("custom_log")->info("Clip {$i} for video {$this->video->id} processed({$executionTime})");
+            ProcessingLogsService::log('clip', $clip->id, 'video processed');
+            ProcessingLogsService::log('video', $this->video->id, "clip {$i} processed({$executionTime})");
+            Log::channel('custom_log')->info("Clip {$i} for video {$this->video->id} processed({$executionTime})");
 
         }
 
-
-        ProcessingLogsService::log("video", $this->video->id, "all clips processed");
+        ProcessingLogsService::log('video', $this->video->id, 'all clips processed');
 
         $this->video->video_processed = true;
         $this->video->save();
@@ -132,34 +122,34 @@ class HandleVideoJob implements ShouldQueue
     public function fragmentateVideo($fragment_timings)
     {
         $global_fragmentation_starttime = microtime(true);
-        ProcessingLogsService::log("video", $this->video->id, "Fragmentation started");
+        ProcessingLogsService::log('video', $this->video->id, 'Fragmentation started');
 
         $local_video_path = $this->copy_to_local($this->video->video_path);
 
         $temp_dir = $this->getOwnTempDir();
-        if (!file_exists($temp_dir)) {
+        if (! file_exists($temp_dir)) {
             mkdir($temp_dir, recursive: true);
         }
-
 
         $fragments_paths = [];
 
         for ($i = 0; $i < count($fragment_timings); $i++) {
             $local_fragmentation_starttime = microtime(true);
 
-            $output_filename = $temp_dir . "/fragment_{$i}.mp4";
+            $output_filename = $temp_dir."/fragment_{$i}.mp4";
 
             $this->cutVideo($local_video_path, $output_filename, $fragment_timings[$i][0], $fragment_timings[$i][1]);
 
             $fragments_paths[] = $output_filename;
 
             $local_fragmentation_duration = microtime(true) - $local_fragmentation_starttime;
-            ProcessingLogsService::log("video", $this->video->id, "Fragment {$i} was processed in {$local_fragmentation_duration} s");
+            ProcessingLogsService::log('video', $this->video->id, "Fragment {$i} was processed in {$local_fragmentation_duration} s");
 
         }
         $global_fragmetation_duration = microtime(true) - $global_fragmentation_starttime;
-        ProcessingLogsService::log("video", $this->video->id, "Video was fragmentated in {$global_fragmetation_duration} s");
+        ProcessingLogsService::log('video', $this->video->id, "Video was fragmentated in {$global_fragmetation_duration} s");
         unlink($local_video_path);
+
         return $fragments_paths;
     }
 
@@ -167,7 +157,6 @@ class HandleVideoJob implements ShouldQueue
     {
         return storage_path("app/temp/{$this->video->id}");
     }
-
 
     public function cutIntervals()
     {
@@ -194,15 +183,14 @@ class HandleVideoJob implements ShouldQueue
                     $old_intervals[$clips_allocated][1] <= $old_intervals[$clips_allocated + 1][0]
                 )
             ) {
-                Log::channel("custom_log")->info("Clip allocated: $clips_allocated");
-                $new_intervals[$clips_allocated]["index_of_fragment"] = $current_fragment_index;
-                $new_intervals[$clips_allocated]["index_in_fragment"] = $current_fragment_clips_count;
-
+                Log::channel('custom_log')->info("Clip allocated: $clips_allocated");
+                $new_intervals[$clips_allocated]['index_of_fragment'] = $current_fragment_index;
+                $new_intervals[$clips_allocated]['index_in_fragment'] = $current_fragment_clips_count;
 
                 if ($fragment_timings[$current_fragment_index] === false) {
                     $fragment_timings[$current_fragment_index] = [
                         $old_intervals[$clips_allocated][0],
-                        $old_intervals[$clips_allocated][1]
+                        $old_intervals[$clips_allocated][1],
                     ];
                 } else {
                     $fragment_timings[$current_fragment_index][1] = $old_intervals[$clips_allocated][1];
@@ -217,22 +205,19 @@ class HandleVideoJob implements ShouldQueue
             }
         }
 
-        Log::channel("custom")->info("Fragments for video[{$this->video->id}] generated($fragments_count)");
+        Log::channel('custom')->info("Fragments for video[{$this->video->id}] generated($fragments_count)");
 
         for ($i = 0; $i < count($old_intervals); $i++) {
-            $new_intervals[$i]["start"] = $old_intervals[$i][0] -
-                $fragment_timings[$new_intervals[$i]["index_of_fragment"]][0];
+            $new_intervals[$i]['start'] = $old_intervals[$i][0] -
+                $fragment_timings[$new_intervals[$i]['index_of_fragment']][0];
 
-            $new_intervals[$i]["end"] = $old_intervals[$i][1] -
-                $fragment_timings[$new_intervals[$i]["index_of_fragment"]][0];
+            $new_intervals[$i]['end'] = $old_intervals[$i][1] -
+                $fragment_timings[$new_intervals[$i]['index_of_fragment']][0];
         }
 
         return [$fragment_timings, $new_intervals];
 
-
     }
-
-
 
     public function copy_to_local($s3_path)
     {
@@ -240,21 +225,19 @@ class HandleVideoJob implements ShouldQueue
         $localPath = storage_path("app/temp/$temp_name.mp4");
         $this->addTempFile($localPath);
 
-        Log::channel("custom_log")->info("Trying to copy from s3");
-        Log::channel("custom_log")->info("From " . $s3_path);
-        Log::channel("custom_log")->info("To   " . $localPath);
-
-
+        Log::channel('custom_log')->info('Trying to copy from s3');
+        Log::channel('custom_log')->info('From '.$s3_path);
+        Log::channel('custom_log')->info('To   '.$localPath);
 
         // Storage::disk('s3')->download($s3_path, $localPath);
         $localDir = dirname($localPath);
-        if (!file_exists($localDir)) {
+        if (! file_exists($localDir)) {
             mkdir($localDir, 0777, true);
         }
 
         file_put_contents(
             $localPath,
-            Storage::disk("s3")->get($s3_path),
+            Storage::disk('s3')->get($s3_path),
 
         );
 
@@ -266,12 +249,11 @@ class HandleVideoJob implements ShouldQueue
         Storage::disk('s3')->put($s3_path, file_get_contents($local_path));
     }
 
-
     public function cutVideo($inputFile, $outputFile, $start, $end)
     {
 
         $this->addTempFile($outputFile);
-        if (!file_exists($inputFile)) {
+        if (! file_exists($inputFile)) {
             throw new Exception("File $inputFile not found.");
         }
 
@@ -279,40 +261,36 @@ class HandleVideoJob implements ShouldQueue
         $duration = number_format($end - $start, 3, '.', '');
 
         if ($duration <= 0) {
-            throw new Exception("Incorrect video length.");
+            throw new Exception('Incorrect video length.');
         }
 
-        if (config("media_files.gpu_handling")) {
-            $command = "ffmpeg -y -hwaccel cuda -hwaccel_output_format cuda -i " . escapeshellarg($inputFile) .
-                " -ss " . escapeshellarg($startFormatted) .
-                " -t " . escapeshellarg($duration) .
-                " -c:v h264_nvenc -preset p4 -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 " .
-                escapeshellarg($outputFile) . " 2>&1";
-        }
-        else{
-            $command = "ffmpeg -y -i " . escapeshellarg($inputFile) .
-           " -ss " . escapeshellarg($startFormatted) .
-           " -t " . escapeshellarg($duration) .
-           " -c:v libx264 -preset medium -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 " .
-           escapeshellarg($outputFile) . " 2>&1";
+        if (config('media_files.gpu_handling')) {
+            $command = 'ffmpeg -y -hwaccel cuda -hwaccel_output_format cuda -i '.escapeshellarg($inputFile).
+                ' -ss '.escapeshellarg($startFormatted).
+                ' -t '.escapeshellarg($duration).
+                ' -c:v h264_nvenc -preset p4 -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 '.
+                escapeshellarg($outputFile).' 2>&1';
+        } else {
+            $command = 'ffmpeg -y -i '.escapeshellarg($inputFile).
+           ' -ss '.escapeshellarg($startFormatted).
+           ' -t '.escapeshellarg($duration).
+           ' -c:v libx264 -preset medium -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 '.
+           escapeshellarg($outputFile).' 2>&1';
 
         }
 
-        Log::channel("custom_log")->info("Command: $command");
+        Log::channel('custom_log')->info("Command: $command");
 
         $output = shell_exec($command);
 
-        if (!file_exists($outputFile) || filesize($outputFile) == 0) {
+        if (! file_exists($outputFile) || filesize($outputFile) == 0) {
             throw new Exception("Error while video cutting: $output");
         }
     }
 
-
-
     protected function deleteTempFiles(): void
     {
         $files = cache()->get($this->jobCacheKey, []);
-
 
         foreach ($files as $filePath) {
             if (file_exists($filePath)) {
@@ -320,21 +298,17 @@ class HandleVideoJob implements ShouldQueue
             }
         }
 
-        if (File::exists($this->getOwnTempDir())){
+        if (File::exists($this->getOwnTempDir())) {
             rmdir($this->getOwnTempDir());
         }
 
-
-
         Cache::forget($this->jobCacheKey);
 
-
-
-
     }
+
     public function failed(Throwable $exception): void
     {
-        Log::info("Job failed deleting temp files");
+        Log::info('Job failed deleting temp files');
         $this->deleteTempFiles();
     }
 }

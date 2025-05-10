@@ -9,11 +9,10 @@ class ProcessingLog extends Model
     protected $fillable = [
         'type',
         'logs',
-        'instance_id'
+        'instance_id',
     ];
 
     protected $casts = [
         'logs' => 'array',
     ];
-
 }

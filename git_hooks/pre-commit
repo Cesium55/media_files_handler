@@ -11,3 +11,16 @@ fi
 
 echo "All tests passed. Proceeding with commit."
 exit 0
+
+
+FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.php$')
+
+if [ -z "$FILES" ]; then
+    exit 0
+fi
+
+./vendor/bin/pint $FILES
+
+git add $FILES
+
+exit 0

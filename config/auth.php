@@ -116,7 +116,7 @@ return [
 
     'auth_service' => [
         'protocol' => 'http',
-        'ip' => '127.0.0.1',
+        'ip' => 'auth_service',
         'port' => '8000',
         'endpoints' => [
             'user_auth' => 'api/v1/user/auth',
@@ -125,6 +125,8 @@ return [
             'get_public_key' => 'api/v1/public-key',
             'api_login' => 'api/v1/api/login',
         ],
+
+        'url' => env('AUTH_SERVICE_URL', "http://auth_service:8000")
 
     ],
 

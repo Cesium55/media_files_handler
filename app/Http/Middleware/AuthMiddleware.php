@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Console\Commands\CacheAuthPublicKey;
 use Closure;
 use Exception;
 use Firebase\JWT\JWT;
@@ -25,19 +26,19 @@ class AuthMiddleware
             return $next($request);
         }
 
-        if (! in_array($auth_role, ['admin', 'authorized'])) {
+        if (!in_array($auth_role, ['admin', 'authorized'])) {
             return response()->json(['message' => 'Server error: Unkown role'], 500);
         }
 
         $token = $request->bearerToken();
 
-        if (! $token) {
+        if (!$token) {
             return response()->json(['message' => 'No access token provided'], 401);
         }
 
         $decoded_jwt = AuthMiddleware::verifyToken($token);
 
-        if (! $decoded_jwt) {
+        if (!$decoded_jwt) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
         $type = $decoded_jwt->type;
@@ -45,7 +46,7 @@ class AuthMiddleware
         $is_admin = (bool) $decoded_jwt->is_admin;
         Log::channel('custom_log')->info("Client {$type} with id=$id (admin=$is_admin) requesting to all videos ");
 
-        if ($auth_role == 'admin' and ! $is_admin) {
+        if ($auth_role == 'admin' and !$is_admin) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -55,9 +56,9 @@ class AuthMiddleware
     public static function verifyToken($token)
     {
         try {
-            $publicKey = Cache::get('auth_public_key');
+            $publicKey = AuthMiddleware::get_public_key();
 
-            if (! $publicKey) {
+            if (!$publicKey) {
                 Log::error('no auth public token');
                 throw new Exception('Public key not found!');
             }
@@ -66,5 +67,18 @@ class AuthMiddleware
         } catch (Exception $e) {
             return null;
         }
+    }
+
+    public static function get_public_key()
+    {
+        $publicKey = Cache::get('auth_public_key');
+        if (!$publicKey) {
+            $command = new CacheAuthPublicKey();
+            $command->handle();
+            $publicKey = Cache::get('auth_public_key');
+        }
+        Log::info("PUBKEY ". $publicKey);
+
+        return $publicKey;
     }
 }

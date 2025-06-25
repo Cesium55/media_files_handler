@@ -37,7 +37,7 @@ class CacheAuthPublicKey extends Command
 
         if (! $response->successful()) {
             $status = $response->status();
-            Log::channel('custom')->error("Error while getting auth public key({$status})");
+            Log::error("Error while getting auth public key({$status})");
 
             return;
         }

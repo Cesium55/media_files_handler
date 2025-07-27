@@ -3,10 +3,16 @@
 namespace App\Services;
 
 use App\Models\Clip;
+use App\Models\Video;
 use Illuminate\Support\Facades\Cache;
 
 class ClipsService
 {
+
+
+    public  function getFullVideo(int $video_id){
+        return Video::find($video_id);
+    }
     public function getVideoClips(int $video_id)
     {
         $clips = Cache::get('video_clips'.$video_id);

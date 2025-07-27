@@ -134,7 +134,7 @@ class VideoController extends Controller
 
     public function get_all()
     {
-        return Video::all();
+        return Video::all()->makeHidden(["clip_intervals"]);
     }
 
     public function recut(int $video_id)

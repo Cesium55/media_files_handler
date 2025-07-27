@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Clip;
+use App\Models\Video;
 use App\Services\ClipsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +17,10 @@ class ClipsController extends Controller
     public function get_clips(int $video_id, ClipsService $clipsService)
     {
         return $clipsService->getClipsPaginated($video_id);
+    }
+
+    public function get_intervals(int $video_id, ClipsService $clipsService){
+        return $clipsService->getFullVideo($video_id);
     }
 
     public function getClipByTiming(int $video_id, Request $request, ClipsService $clipsService)

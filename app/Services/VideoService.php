@@ -17,7 +17,7 @@ class VideoService
             return $video;
         }
 
-        $video = Video::find($video_id);
+        $video = Video::find($video_id)->makeHidden(["clip_intervals"]);
         if (! $video) {
             abort(404, "Video [id=$video_id] not found");
         }
@@ -32,7 +32,8 @@ class VideoService
 
         $page = request()->get('page', 1);
 
-        $videos = Cache::get("videos_paginated_{$page}");
+        // $videos = Cache::get("videos_paginated_{$page}");
+        $videos = false;
 
         if ($videos) {
             Log::info('Videos from cache');
@@ -41,6 +42,10 @@ class VideoService
         }
 
         $videos = Video::paginate(10);
+        $videos->getCollection()->transform(function ($video) {
+            return $video->makeHidden(['clip_intervals']);
+        });
+
 
         if ($videos->isEmpty()) {
             Log::info('Page to big no caching');
@@ -50,7 +55,7 @@ class VideoService
 
         Log::info('Videos from db, setting to cache');
 
-        Cache::set("videos_paginated_{$page}", $videos, config('cache.defaul_cache_ttl'));
+        // Cache::set("videos_paginated_{$page}", $videos, config('cache.defaul_cache_ttl'));
 
         return $videos;
     }

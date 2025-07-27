@@ -28,6 +28,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/', [VideoController::class, 'getAllPaginated']);
 
         Route::get('/{video_id}/clips', [ClipsController::class, 'get_clips']);
+        Route::get('/{video_id}/intervals', [ClipsController::class, 'get_intervals']);
 
         Route::post('/video', [VideoController::class, 'create'])->middleware(AuthMiddleware::class.':admin');
         Route::post('/{video_id}/upload-subs', [VideoController::class, 'load_subs'])->middleware(AuthMiddleware::class.':admin');

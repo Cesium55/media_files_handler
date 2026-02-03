@@ -4,9 +4,12 @@ RUN apk add --no-cache \
     $PHPIZE_DEPS \
     zip unzip curl libpq-dev git ffmpeg \
     nodejs npm \
+    linux-headers \
+    g++ \
     && pecl install redis \
     && docker-php-ext-enable redis \
-    && docker-php-ext-install pdo pdo_pgsql
+    && docker-php-ext-install pdo pdo_pgsql sockets
+
 
 WORKDIR /var/www
 

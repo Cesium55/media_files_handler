@@ -19,7 +19,8 @@ class ClipsController extends Controller
         return $clipsService->getClipsPaginated($video_id);
     }
 
-    public function get_intervals(int $video_id, ClipsService $clipsService){
+    public function get_intervals(int $video_id, ClipsService $clipsService)
+    {
         return $clipsService->getFullVideo($video_id);
     }
 
@@ -50,5 +51,23 @@ class ClipsController extends Controller
 
         return $clip;
 
+    }
+
+
+    public function getByIds(Request $request)
+    {
+        // получаем строку "1,2,34,55"
+        $idsString = $request->query('ids');
+
+        // преобразуем в массив чисел
+        $ids = array_filter(
+            array_map('intval', explode(',', $idsString))
+        );
+
+        // достаем из базы
+        $clips = Clip::whereIn('id', $ids)->get();
+
+        // возвращаем JSON
+        return response()->json(["data" => $clips]);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Clip;
 use App\Models\Video;
 use App\Services\ProcessingLogsService;
+use App\Services\RabbitMQService;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -31,7 +32,7 @@ class HandleVideoJob implements ShouldQueue
     public function __construct(Video $video)
     {
         $this->video = $video;
-        $this->jobCacheKey = 'job_handle_video:'.$this->video->id;
+        $this->jobCacheKey = 'job_handle_video:' . $this->video->id;
     }
 
     /**
@@ -39,6 +40,7 @@ class HandleVideoJob implements ShouldQueue
      */
     public function handle(): void
     {
+        $this->broker_new_group_notify();
         $this->processVideo();
     }
 
@@ -95,6 +97,7 @@ class HandleVideoJob implements ShouldQueue
 
             $clip->video_path = $s3_clip_path;
             $clip->save();
+            $this->broker_new_clip_notify($clip);
 
             unlink($clipLocalPath);
 
@@ -127,7 +130,7 @@ class HandleVideoJob implements ShouldQueue
         $local_video_path = $this->copy_to_local($this->video->video_path);
 
         $temp_dir = $this->getOwnTempDir();
-        if (! file_exists($temp_dir)) {
+        if (!file_exists($temp_dir)) {
             mkdir($temp_dir, recursive: true);
         }
 
@@ -136,7 +139,7 @@ class HandleVideoJob implements ShouldQueue
         for ($i = 0; $i < count($fragment_timings); $i++) {
             $local_fragmentation_starttime = microtime(true);
 
-            $output_filename = $temp_dir."/fragment_{$i}.mp4";
+            $output_filename = $temp_dir . "/fragment_{$i}.mp4";
 
             $this->cutVideo($local_video_path, $output_filename, $fragment_timings[$i][0], $fragment_timings[$i][1]);
 
@@ -226,12 +229,12 @@ class HandleVideoJob implements ShouldQueue
         $this->addTempFile($localPath);
 
         Log::channel('custom_log')->info('Trying to copy from s3');
-        Log::channel('custom_log')->info('From '.$s3_path);
-        Log::channel('custom_log')->info('To   '.$localPath);
+        Log::channel('custom_log')->info('From ' . $s3_path);
+        Log::channel('custom_log')->info('To   ' . $localPath);
 
         // Storage::disk('s3')->download($s3_path, $localPath);
         $localDir = dirname($localPath);
-        if (! file_exists($localDir)) {
+        if (!file_exists($localDir)) {
             mkdir($localDir, 0777, true);
         }
 
@@ -253,7 +256,7 @@ class HandleVideoJob implements ShouldQueue
     {
 
         $this->addTempFile($outputFile);
-        if (! file_exists($inputFile)) {
+        if (!file_exists($inputFile)) {
             throw new Exception("File $inputFile not found.");
         }
 
@@ -265,17 +268,17 @@ class HandleVideoJob implements ShouldQueue
         }
 
         if (config('media_files.gpu_handling')) {
-            $command = 'ffmpeg -y -hwaccel cuda -hwaccel_output_format cuda -i '.escapeshellarg($inputFile).
-                ' -ss '.escapeshellarg($startFormatted).
-                ' -t '.escapeshellarg($duration).
-                ' -c:v h264_nvenc -preset p4 -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 '.
-                escapeshellarg($outputFile).' 2>&1';
+            $command = 'ffmpeg -y -hwaccel cuda -hwaccel_output_format cuda -i ' . escapeshellarg($inputFile) .
+                ' -ss ' . escapeshellarg($startFormatted) .
+                ' -t ' . escapeshellarg($duration) .
+                ' -c:v h264_nvenc -preset p4 -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 ' .
+                escapeshellarg($outputFile) . ' 2>&1';
         } else {
-            $command = 'ffmpeg -y -i '.escapeshellarg($inputFile).
-           ' -ss '.escapeshellarg($startFormatted).
-           ' -t '.escapeshellarg($duration).
-           ' -c:v libx264 -preset medium -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 '.
-           escapeshellarg($outputFile).' 2>&1';
+            $command = 'ffmpeg -y -i ' . escapeshellarg($inputFile) .
+                ' -ss ' . escapeshellarg($startFormatted) .
+                ' -t ' . escapeshellarg($duration) .
+                ' -c:v libx264 -preset medium -qp 23 -c:a aac -b:a 192k -movflags +faststart -reset_timestamps 1 ' .
+                escapeshellarg($outputFile) . ' 2>&1';
 
         }
 
@@ -283,7 +286,7 @@ class HandleVideoJob implements ShouldQueue
 
         $output = shell_exec($command);
 
-        if (! file_exists($outputFile) || filesize($outputFile) == 0) {
+        if (!file_exists($outputFile) || filesize($outputFile) == 0) {
             throw new Exception("Error while video cutting: $output");
         }
     }
@@ -310,5 +313,41 @@ class HandleVideoJob implements ShouldQueue
     {
         Log::info('Job failed deleting temp files');
         $this->deleteTempFiles();
+    }
+
+
+    public function broker_new_group_notify()
+    {
+        $rabbit = new RabbitMQService();
+
+        $rabbit->publish(
+            "ir_groups_queue",
+            [
+                "op" => "add",
+                "data" => [
+                    "entity_name" => "clips",
+                    "owner_id" => -1,
+                    "id" => $this->video->id,
+                    "name" => $this->video->title
+                ]
+            ]
+        );
+    }
+
+
+    public function broker_new_clip_notify(Clip $clip){
+        $rabbit = new RabbitMQService();
+        $rabbit->publish(
+            "ir_instances_queue",
+            [
+                "op" => "add",
+                "data" => [
+                    "entity_name" => "clips",
+                    "owner_id" => -1,
+                    "id" => $clip->id,
+                    "groups_id" => [$this->video->id]
+                ]
+            ]
+        );
     }
 }
